@@ -3,6 +3,7 @@ import { createState, tip, fmtDay, dayToDate, dateToDay, fmt, signed, clamp } fr
 import { createMap } from './map.js';
 import { createSeasonal } from './seasonal.js';
 import { createTimeline } from './timeline.js';
+import { initStory, STORY_START, STORY_YEARS } from './story.js';
 
 const $ = (s) => document.querySelector(s);
 const SHORT = {
@@ -20,16 +21,23 @@ async function main() {
     label.innerHTML = `Could not load the data: ${err.message}.<br>Serve this folder over http (for example <code>python -m http.server</code>) after running <code>python scripts/export_site.py</code>.`;
     throw err;
   }
-  start(data);
+  const ctl = start(data, { day: STORY_START, preload: STORY_YEARS });
+  initStory(ctl);
 }
 
-function start(data) {
-  const state = createState({ day: data.dayMin, playing: false, speed: 64, layer: 'green', lasso: false });
+function start(data, { day = data.dayMin, preload = [2000, 2001, 2002] } = {}) {
+  const state = createState({ day, playing: false, speed: 64, layer: 'green', lasso: false, stopAt: null });
   const obs = data.obs;
   const nYears = data.yearList.length;
 
-  const mapHeight = clamp(window.innerHeight - 380, 380, 620);
+  // the map card sits beside the story rail, so the map is limited by both the window height and the width left over
+  const vw = window.innerWidth, wide = vw > 1100;
+  const railW = wide ? clamp(vw * 0.22, 260, 330) : 0;
+  const spareW = vw - railW - 56 - 36 - 400 - 34;             // page padding, gaps, right column, card padding
+  const mapAspect = (data.W * Math.cos((37.3 * Math.PI) / 180)) / data.H;
+  const mapHeight = Math.round(clamp(Math.min(window.innerHeight - 420, wide ? spareW / mapAspect : Infinity), 300, 620));
   const map = createMap($('#map'), data, { height: mapHeight });
+  if (wide) $('.mapcard').style.width = `${Math.max(Math.round(mapHeight * mapAspect) + 34, 490)}px`;   // leave the rest to the chart
   const seasonal = createSeasonal($('#seasonal'), { width: 740, height: 310, onJump });
   const timeline = createTimeline($('#timeline'), data, { onSeek, onGrab });
   $('#app').hidden = false;
@@ -52,10 +60,7 @@ function start(data) {
     b.style.setProperty('--c', r.color);
     b.setAttribute('aria-pressed', 'false');
     b.innerHTML = `<span class="rname">${SHORT[r.key] || r.name}</span><span class="rbar"><i class="rfill"></i></span><span class="rval"></span>`;
-    b.addEventListener('click', () => {
-      map.setMark(null); map.gLasso.selectAll('*').remove();
-      setArea(makeArea(r.key, r.name, idxWhere((i) => data.regionIds[i] === r.id)));
-    });
+    b.addEventListener('click', () => selectRegion(r.key));
     regionsEl.appendChild(b);
     return { r, vals, typ: data.typicalOf(vals), el: b, fill: b.querySelector('.rfill'), val: b.querySelector('.rval') };
   });
@@ -69,6 +74,14 @@ function start(data) {
       t.val.textContent = Number.isFinite(d) ? signed(d) : 'n/a';
       t.val.className = `rval ${d >= 0 ? 'up' : 'down'}`;
     }
+  }
+
+  // a named region, or 'state' for all of California
+  function selectRegion(key) {
+    map.setMark(null); map.gLasso.selectAll('*').remove();
+    const r = data.regions.find((x) => x.key === key);
+    if (!r) setArea(makeArea('state', 'All of California', null));
+    else setArea(makeArea(r.key, r.name, idxWhere((i) => data.regionIds[i] === r.id)));
   }
 
   function setArea(a) {
@@ -162,17 +175,18 @@ function start(data) {
   }
   $('#layer-seg').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    state.set({ layer: b.dataset.layer });
-    updateLayerUI(); dirty = true;
+    setLayer(b.dataset.layer);
   });
+  function setLayer(l) { state.set({ layer: l }); updateLayerUI(); dirty = true; }
 
   const playBtn = $('#play');
   function updatePlayUI() { playBtn.innerHTML = state.get().playing ? '&#10074;&#10074; Pause' : '&#9654; Play'; }
   function live() { $('#readout').setAttribute('aria-live', state.get().playing ? 'off' : 'polite'); }
   function play() { state.set({ playing: true }); updatePlayUI(); live(); }
-  function pause() { state.set({ playing: false }); updatePlayUI(); live(); }
+  function pause() { state.set({ playing: false, stopAt: null }); updatePlayUI(); live(); }
   playBtn.addEventListener('click', () => (state.get().playing ? pause() : play()));
   $('#speed').addEventListener('change', (e) => state.set({ speed: +e.target.value }));
+  function setSpeed(v) { state.set({ speed: v }); $('#speed').value = String(v); }
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' || ['SELECT', 'INPUT', 'TEXTAREA', 'BUTTON', 'SUMMARY'].includes(e.target.tagName)) return;
     e.preventDefault();
@@ -202,8 +216,13 @@ function start(data) {
       if (cur.some((y) => !data.isLoaded(y))) dirty = true;                         // pause until the current year has loaded
       else {
         let next = s.day + s.speed * dt;
-        if (next >= data.dayMax) next = data.dayMin;
-        state.set({ day: next });
+        if (s.stopAt != null && next >= s.stopAt) {           // a story step played up to its end date
+          state.set({ day: s.stopAt });
+          pause();
+        } else {
+          if (next >= data.dayMax) next = data.dayMin;
+          state.set({ day: next });
+        }
         dirty = true;
       }
     }
@@ -290,16 +309,26 @@ function start(data) {
     tip.hide();
     updateHint();
   });
-  $('#tool-clear').addEventListener('click', () => {
-    map.setMark(null); map.gLasso.selectAll('*').remove();
-    setArea(makeArea('state', 'All of California', null));
-  });
+  $('#tool-clear').addEventListener('click', () => selectRegion('state'));
 
   state.on((keys) => { if (keys.includes('day') || keys.includes('layer')) dirty = true; });
 
   updateLayerUI(); updatePlayUI(); live(); updateLoadStatus(); setArea(area);
-  data.prioritize([2000, 2001, 2002]);
+  data.prioritize(preload);
   requestAnimationFrame(tick);
+
+  // used by the story steps: set the place, map layer and date, and optionally play up to a later date
+  return {
+    goTo({ place, layer, day, playTo, speed }) {
+      pause();
+      if (state.get().lasso) $('#tool-lasso').click();          // leave drawing mode
+      if (place && place !== area.key) selectRegion(place);
+      if (layer) setLayer(layer);
+      if (speed) setSpeed(speed);
+      if (day != null) seek(day);
+      if (playTo != null && playTo > state.get().day) { play(); state.set({ stopAt: playTo }); }
+    },
+  };
 }
 
 main();

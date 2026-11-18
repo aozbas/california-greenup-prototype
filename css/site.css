@@ -118,10 +118,41 @@ svg.tl .tick { fill: var(--muted); font-size: 11px; }
 .tip { position: fixed; z-index: 10; display: none; pointer-events: none; background: rgba(28,43,34,.95); color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.45; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: 260px; }
 .tip .muted { color: #b9c4bc; }
 
+/* story: hook, then a rail of step cards beside the pinned app */
+.hook { padding-top: 7vh; padding-bottom: 5vh; }
+.hook h1 { font-size: clamp(30px, 4vw, 46px); }
+.hook-q { font-size: clamp(19px, 2vw, 24px); margin: 10px 0 12px; max-width: 820px; line-height: 1.35; }
+.scroll-cue { margin: 22px 0 0; color: var(--accent); font-weight: 600; }
+.scrolly { display: grid; grid-template-columns: clamp(260px, 22vw, 330px) minmax(0, 1fr); max-width: 1500px; margin: 0 auto; padding-left: 28px; }
+.rail { padding: 30vh 0 20vh; }
+.story-step { background: var(--panel); border: 1px solid var(--grid); border-left: 4px solid var(--grid); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 70vh; opacity: .45; transition: opacity .25s, border-color .25s; }
+.story-step:last-child { margin-bottom: 40vh; }
+.story-step.active { opacity: 1; border-left-color: var(--accent); box-shadow: 0 4px 18px rgba(28,43,34,.08); }
+.story-step h3 { margin: 2px 0 6px; font-size: 18px; line-height: 1.25; }
+.story-step p { margin: 6px 0; font-size: 15px; line-height: 1.5; }
+.story-step .kicker { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.story-step .replay { margin-top: 6px; }
+.stage { position: sticky; top: 0; align-self: start; min-height: 100vh; display: flex; align-items: center; }
+.stage .grid { padding-left: 18px; width: 100%; padding-top: 12px; padding-bottom: 12px; }
+.scrolly .mapcard { width: auto; flex: 0 1 auto; min-width: 0; }
+.scrolly .rtile { grid-template-columns: minmax(0, 1fr) 40px 40px; gap: 6px; font-size: 12.5px; }
+.todo { color: var(--hilite); font-style: italic; }
+
 @media (width > 1190px) { .grid { flex-wrap: nowrap; } }
 @media (width <= 1190px) {
   .rightcol { flex-basis: 100%; }
-  .step { display: none; }
+  .grid .step { display: none; }
+}
+/* narrow screens: the step cards scroll over the pinned app instead of beside it */
+@media (width <= 1100px) {
+  .scrolly { grid-template-columns: minmax(0, 1fr); padding-left: 0; }
+  .rail, .stage { grid-area: 1 / 1; }
+  .rail { position: relative; z-index: 3; pointer-events: none; padding: 60vh 14px 10vh; }
+  .story-step { pointer-events: auto; max-width: 420px; margin-left: auto; opacity: .96; }
+  .story-step:not(.active) { opacity: .7; }
+  .stage { align-items: flex-start; }
+  .stage .grid { padding-left: 14px; }
 }
 @media (max-width: 760px) {
   .top, .grid { padding-left: 14px; padding-right: 14px; }
