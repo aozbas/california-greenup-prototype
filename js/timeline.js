@@ -10,11 +10,15 @@ export function createTimeline(host, data, { onSeek, onGrab } = {}) {
     .attr('aria-valuemin', data.dayMin).attr('aria-valuemax', data.dayMax);
 
   // each cell spans halfway to its neighbours
-  const cells = svg.append('g').selectAll('rect').data(d3.range(T)).join('rect')
+  const cellX = (i) => x(i === 0 ? dd[0] : (dd[i - 1] + dd[i]) / 2);
+  const cellW = (i) => Math.max(0.9, x(i === T - 1 ? dd[i] : (dd[i] + dd[i + 1]) / 2) - cellX(i) + 0.35);
+  const gCells = svg.append('g');
+  const cells = gCells.selectAll('rect').data(d3.range(T)).join('rect')
     .attr('y', sy).attr('height', sh)
-    .attr('x', (i) => x(i === 0 ? dd[0] : (dd[i - 1] + dd[i]) / 2))
-    .attr('width', (i) => Math.max(0.9, x(i === T - 1 ? dd[i] : (dd[i] + dd[i + 1]) / 2) - x(i === 0 ? dd[0] : (dd[i - 1] + dd[i]) / 2) + 0.35))
+    .attr('x', cellX)
+    .attr('width', cellW)
     .attr('fill', '#e6e8e1');
+  const gRows = svg.append('g');                // compare mode: one thin strip per region
 
   const axis = svg.append('g').attr('transform', `translate(0,${sy + sh})`);
   for (let y = 2000; y <= 2026; y++) {
@@ -43,15 +47,40 @@ export function createTimeline(host, data, { onSeek, onGrab } = {}) {
     return clamp(x.invert(((evt.clientX - r.left) / r.width) * W), data.dayMin, data.dayMax);
   };
 
-  let anom = null;
+  let anom = null, rows = null, loadedFn = null;
+  const colour = (lim) => {
+    const col = d3.scaleSequential(d3.interpolateBrBG).domain([-lim, lim]).clamp(true);
+    return (v) => (Number.isFinite(v) ? col(v) : '#e6e8e1');
+  };
   const api = {
     setAnomaly(values, lim) {
-      anom = values;
-      const col = d3.scaleSequential(d3.interpolateBrBG).domain([-lim, lim]).clamp(true);
-      cells.attr('fill', (i) => (Number.isFinite(values[i]) ? col(values[i]) : '#e6e8e1'));
+      anom = values; rows = null;
+      gRows.selectAll('*').remove();
+      gCells.style('display', null);
+      const c = colour(lim);
+      cells.attr('fill', (i) => c(values[i]));
+    },
+    // rows: [{ name, color, values, lim }], stacked top to bottom in the same strip
+    setAnomalyRows(newRows) {
+      rows = newRows; anom = null;
+      gCells.style('display', 'none');
+      const h = sh / rows.length;
+      gRows.selectAll('g.trow').data(rows).join('g').attr('class', 'trow').each(function (row, k) {
+        const g = d3.select(this);
+        const c = colour(row.lim);
+        g.selectAll('rect.tc').data(d3.range(T)).join('rect').attr('class', 'tc')
+          .attr('x', cellX).attr('width', cellW).attr('y', sy + k * h).attr('height', Math.max(1, h - 0.6))
+          .attr('fill', (i) => c(row.values[i]));
+        g.selectAll('rect.sw').data([row]).join('rect').attr('class', 'sw')
+          .attr('x', 2).attr('width', 4).attr('y', sy + k * h).attr('height', Math.max(1, h - 0.6)).attr('fill', row.color);
+      });
+      if (loadedFn) api.setLoaded(loadedFn);
     },
     setLoaded(isLoaded) {
-      cells.attr('opacity', (i) => (isLoaded(data.obs.year[i]) ? 1 : 0.28));
+      loadedFn = isLoaded;
+      const op = (i) => (isLoaded(data.obs.year[i]) ? 1 : 0.28);
+      cells.attr('opacity', op);
+      gRows.selectAll('rect.tc').attr('opacity', op);
     },
     setDay(day) {
       head.attr('transform', `translate(${x(day)},0)`);
@@ -72,6 +101,14 @@ export function createTimeline(host, data, { onSeek, onGrab } = {}) {
   svg.on('pointermove', (evt) => {
     if (dragging) { onSeek?.(dayAt(evt)); tip.hide(); return; }
     const j = nearest(dayAt(evt));
+    if (rows) {
+      const list = rows.map((r) => {
+        const a = r.values[j];
+        return `<div><span style="color:${r.color}">&#9632;</span> ${r.name}: ${Number.isFinite(a) ? `${signed(a)} vs usual` : 'n/a'}</div>`;
+      }).join('');
+      tip.show(`<b>${fmtDay(dd[j])}</b>${list}`, evt);
+      return;
+    }
     const a = anom?.[j];
     tip.show(`<b>${fmtDay(dd[j])}</b>${Number.isFinite(a) ? `<div>${signed(a)} vs usual</div><div class="muted">${a >= 0 ? 'greener' : 'browner'} than usual here</div>` : ''}`, evt);
   });

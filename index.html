@@ -15,55 +15,108 @@
   </div>
 
   <div id="app" hidden>
-    <header class="top hook">
+    <header class="hook">
       <h1>When does California turn green?</h1>
       <p class="hook-q">Ask most people when plants are greenest and they will say spring. In California, that is only true for part of the state.</p>
-      <p class="lede">We use 26 years of NASA satellite measurements (2000-2025, one image about every 8 days) to show when each part of California turns green, and how much a good or bad year changes that. Greenness is NASA's vegetation index (NDVI): the darker the green, the more plants are growing.</p>
-      <p class="scroll-cue" aria-hidden="true">Scroll to start &darr;</p>
+      <p class="lede">We use 26 years of NASA satellite measurements (2000-2025, one image about every 8 days). Greenness is NASA's vegetation index (NDVI): the darker the green, the more plants are growing.</p>
+
+      <div class="guess card" id="guess">
+        <p class="guess-q">Before we start, make a guess. <b>In which month is each of these places usually at its greenest?</b></p>
+        <div class="guess-row" data-key="coast_range"><span class="guess-name">The coastal hills <small>(grass and oak, near the ocean)</small></span><div class="months"></div></div>
+        <div class="guess-row" data-key="sierra"><span class="guess-name">The Sierra Nevada <small>(the high mountains in the east)</small></span><div class="months"></div></div>
+        <button id="guess-reveal" class="play" disabled>Show me</button>
+        <div id="guess-result" hidden>
+          <div id="guess-chart"></div>
+          <p id="guess-text"></p>
+        </div>
+      </div>
+      <p class="scroll-cue" aria-hidden="true">Scroll to see the story</p>
     </header>
 
     <section class="scrolly" aria-label="The story">
       <div class="rail">
-        <!-- DRAFT step text: facts checked against the data; the team rewrites the wording in their own voice -->
+        <!-- DRAFT step text: numbers checked against the data; the team rewrites the wording in their own voice -->
         <article class="story-step" data-step="hills">
-          <p class="kicker">A normal year: 2009</p>
-          <h3>March: the hills are at their greenest</h3>
-          <p>In a typical year, the Coast Range hills and the San Joaquin Valley are greenest in mid to late March. Their grass and oak woodland grow with the winter rain.</p>
+          <div class="step-card">
+            <p class="kicker">A normal year (2009)</p>
+            <h3>March: the hills are at their greenest</h3>
+            <p>In a typical year, the Coast Range hills and the San Joaquin Valley are greenest in mid to late March. Their grass and oak woodland grow with the winter rain.</p>
+          </div>
         </article>
-        <article class="story-step" data-step="summer">
-          <p class="kicker">March to August</p>
-          <h3>By summer, the green moves</h3>
-          <p>Watch spring turn into summer. The hills and the valley floor dry out and turn brown, while the Sierra Nevada and the irrigated Sacramento Valley reach their greenest.</p>
-          <button class="ghost replay" data-replay="summer">&#8635; Play it again</button>
+        <article class="story-step scrub" data-step="summer">
+          <div class="step-card">
+            <p class="kicker">Keep scrolling to move through time</p>
+            <h3>By summer, the green moves east</h3>
+            <p>As spring turns into summer, the hills and the valley floor dry out and turn brown, while the Sierra Nevada greens up.</p>
+            <div class="scrub-track" aria-hidden="true"><span>Mar</span><div class="scrub-rail"><div id="scrub-bar"></div></div><span>Aug</span></div>
+          </div>
         </article>
         <article class="story-step" data-step="sierra">
-          <p class="kicker">Sierra Nevada</p>
-          <h3>The mountains peak in July</h3>
-          <p>The Sierra turns green only after the snow melts. In the chart, the thick black line is the usual year: it rises through spring and peaks in summer, about four months after the coast.</p>
+          <div class="step-card">
+            <p class="kicker">Sierra Nevada</p>
+            <h3>The mountains peak in July</h3>
+            <p>The Sierra turns green only after the snow melts. Its usual year rises through spring and peaks in summer, four months after the coast.</p>
+          </div>
         </article>
-        <article class="story-step" data-step="green05">
-          <p class="kicker">Greener or browner than usual</p>
-          <h3>2005: the greenest spring</h3>
-          <p>The map now compares each place with its usual greenness for that time of year. Teal is greener than usual, brown is browner. In March 2005, most of the state was teal.</p>
+        <article class="story-step" data-step="compare">
+          <div class="step-card">
+            <p class="kicker">Greener or browner than usual</p>
+            <h3>A green spring and a brown one</h3>
+            <p>Now each place is compared with its usual greenness for the same time of year: teal is greener than usual, brown is browner. On March 21, 2005 (left) most of the state was greener than usual. On the same date in 2014 (right), most of it was browner.</p>
+          </div>
         </article>
         <article class="story-step" data-step="coast14">
-          <p class="kicker">2014: the least green spring</p>
-          <h3>The Coast Range was far browner than usual</h3>
-          <p>In late March 2014 the Coast Range was about 0.18 below its usual greenness. The tiles above the map show how every region compares on the same date.</p>
+          <div class="step-card">
+            <p class="kicker">2014: the least green spring</p>
+            <h3>The Coast Range was far browner than usual</h3>
+            <p>In late March 2014 the Coast Range was about 0.18 below its usual greenness. Its 2014 line (orange) stays under the usual range all spring.</p>
+          </div>
         </article>
         <article class="story-step" data-step="sierra14">
-          <p class="kicker">Same date, different place</p>
-          <h3>But the Sierra was greener</h3>
-          <p>On the same day the Sierra Nevada was about 0.10 <em>greener</em> than usual. A brown year for the hills was a green year for the mountains, probably because less snow covered the ground. So whether a year is "good" depends on where you look.</p>
+          <div class="step-card">
+            <p class="kicker">Same date, different place</p>
+            <h3>But the Sierra was greener</h3>
+            <p>On the same day, the Sierra Nevada was about 0.09 <em>greener</em> than usual, probably because less snow covered the ground.</p>
+          </div>
         </article>
-        <article class="story-step explore-step" data-step="explore">
-          <p class="kicker">Your turn</p>
-          <h3>When does your part of California turn green?</h3>
-          <p>Pick a region, click any spot, or draw your own area. Then press play or drag the timeline. Is your place a spring place or a summer place?</p>
+        <article class="story-step" data-step="takeaway">
+          <div class="step-card takeaways">
+            <p class="kicker">What to take away (dashed lines: 2014)</p>
+            <h3>There is no single green season</h3>
+            <ul>
+              <li>The coastal hills are greenest in March. The Sierra waits until July.</li>
+              <li>A "good" or "bad" year depends on where you look: in 2014 the hills were far browner than usual while the Sierra was greener.</li>
+              <li>So when you ask whether California is green this year, the answer is: which part?</li>
+            </ul>
+          </div>
         </article>
       </div>
 
-      <div class="stage">
+      <div class="stage" id="stage">
+        <figure class="smap smapA">
+          <figcaption><span class="smap-date" id="smapA-date"></span><span class="smap-cap" id="smapA-cap"></span><span class="smap-load" id="smapA-load" hidden>loading&hellip;</span></figcaption>
+          <div id="smapA"></div>
+        </figure>
+        <div class="slot">
+          <figure class="schart-fig">
+            <figcaption id="schart-title"></figcaption>
+            <div id="schart"></div>
+          </figure>
+          <figure class="smap smapB">
+            <figcaption><span class="smap-date" id="smapB-date"></span><span class="smap-cap" id="smapB-cap"></span></figcaption>
+            <div id="smapB"></div>
+          </figure>
+        </div>
+        <div class="slegend legend" id="slegend"></div>
+      </div>
+    </section>
+
+    <header class="top explore-head" id="explore">
+      <h2 class="explore-title">Your turn: when does your part of California turn green?</h2>
+      <p class="lede">Pick a region, click any spot, or draw your own area. Then press play or drag the timeline to move through all 26 years.</p>
+    </header>
+
+
     <main class="grid">
       <section class="card mapcard" aria-labelledby="h-place">
         <div class="areabar">
@@ -115,7 +168,7 @@
         <section class="card chartcard" aria-labelledby="h-chart">
           <h2 id="h-chart" class="visually-hidden">Greenness through the year</h2>
           <div id="readout" aria-live="polite"></div>
-          <div class="linekey" aria-hidden="true">
+          <div class="linekey" id="linekey" aria-hidden="true">
             <span><i class="k faint"></i>each other year</span>
             <span><i class="k cur"></i>the year on the map</span>
             <span><i class="k usual"></i>usual (middle of 2001-2025)</span>
@@ -126,8 +179,6 @@
         </section>
       </div>
     </main>
-      </div>
-    </section>
 
 
     <details class="about card">
